@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <meta charset="UTF-8">
+    <title>Timed Question Release with Timer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="user-form">
+        <h2>Enter Your Details to Start the Experiment</h2>
+        <form id="startForm">
+            <input type="text" id="name" name="name" placeholder="Your Name" required>
+            <input type="email" id="email" name="email" placeholder="Your Email" required>
+            <button type="submit">Start Experiment</button>
+        </form>
+        <div id="doc-link" style="display: none;">
+            <p>Your Google Doc has been created: <a id="doc-url" href="#" target="_blank">Open your document</a></p>
+        </div>
+    </div>
+
+    <div id="warning" style="display: none;">⚠️ Please do not use ChatGPT during this experiment!</div>
+
+    <h1 style="display: none;">Timed Questions Experiment</h1>
+
+    <div id="description" style="display: none;">
+        <p>Answer each question briefly (within 5 sentences) and take notes as needed. You may use this Google Doc for notes:</p>
+        <p>
+            <a id="dynamic-doc-link" href="#" target="_blank">Click here to access the Google Doc</a>
+        </p>
+        <p>This experiment consists of 5 questions, each taking approximately 5 to 10 minutes to complete. Total experiment time is 35 minutes.</p>
+    </div>
+    
+    <div id="overall-timer" style="display: none;">Overall Time Remaining: 35:00 / 35 min</div>
+
+    <div id="question1" class="question" style="display: none;">1. How can we create a rule to prevent people from falling when building houses on the Moon? 
+        <div id="timer1">Time Remaining: 10:00 / 10 min</div>
+        <button onclick="skipToNextQuestion(1)">Next Question</button>
+    </div>
+    <div id="question2" class="question" style="display: none;">2. What are the rules on Earth to stop people from falling at work or construction sites? 
+        <div id="timer2">Time Remaining: 5:00 / 5 min</div>
+        <button onclick="skipToPreviousQuestion(2)">Previous Question</button>
+        <button onclick="skipToNextQuestion(2)">Next Question</button>
+    </div>
+    <div id="question3" class="question" style="display: none;">3. How would the risk of falling be different on the Moon compared to Earth? 
+        <div id="timer3">Time Remaining: 5:00 / 5 min</div>
+        <button onclick="skipToPreviousQuestion(3)">Previous Question</button>
+        <button onclick="skipToNextQuestion(3)">Next Question</button>
+    </div>
+    <div id="question4" class="question" style="display: none;">4. Can we use Earth’s rules to help keep people safe from falling on the Moon? 
+        <div id="timer4">Time Remaining: 5:00 / 5 min</div>
+        <button onclick="skipToPreviousQuestion(4)">Previous Question</button>
+        <button onclick="skipToNextQuestion(4)">Next Question</button>
+    </div>
+    <div id="question5" class="question" style="display: none;">5. Draw a picture or diagram showing how we can stop people from falling when building houses on the Moon. Use Lucidchart to help you.
+        <div id="timer5">Time Remaining: 10:00 / 10 min</div>
+        <div><a href="https://www.lucidchart.com/" target="_blank">Click here to create your diagram in Lucidchart</a></div>
+        <button onclick="skipToPreviousQuestion(5)">Previous Question</button>
+        <button onclick="finishExperiment()">Finish</button>
+    </div>
+
+    <div id="end-screen" style="display: none;">
+        <h2>The experiment has ended. Thank you for your participation!</h2>
+        <p>You may now close this window.</p>
+    </div>
+
+    <script>
+        let totalTime = 35 * 60;  // 35 minutes in seconds
+        let questionDurations = [10 * 60, 5 * 60, 5 * 60, 5 * 60, 10 * 60];
+        let questionTimers = [...questionDurations];
+        let currentQuestion = 0;
+        let questionInterval;
+        let overallInterval;
+        let timeline = []; // Timeline to store each question's start and end times
+        let browsingHistory = []; // Array to store website visit history
+        let questionStartTime;
+
+        // Handle form submission to create a Google Doc
+        document.getElementById('startForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            
+            fetch('/create_doc', {
+                method: 'POST',
+                body: new URLSearchParams(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.doc_url) {
+                    document.getElementById('user-form').style.display = 'none';
+                    document.getElementById('doc-link').style.display = 'block';
+                    document.getElementById('doc-url').href = data.doc_url;
+                    document.getElementById('doc-url').innerText = data.doc_url;
+
+                    // Update dynamic doc link and start the experiment
+                    document.getElementById('dynamic-doc-link').href = data.doc_url;
+                    startExperiment();
+                }
+            })
+            .catch(error => {
+                console.error('Error creating Google Doc:', error);
+            });
+        });
+
+        // Function to format time as mm:ss
+        function formatTime(seconds) {
+            let mins = Math.floor(seconds / 60);
+            let secs = seconds % 60;
+            return mins.toString().padStart(2, '0') + ":" + secs.toString().padStart(2, '0');
+        }
+
+        // Function to update overall and individual question timers
+        function updateTimers() {
+            document.getElementById('overall-timer').innerText = "Overall Time Remaining: " + formatTime(totalTime) + " / 35 min";
+            for (let i = 1; i <= 5; i++) {
+                let timerElement = document.getElementById('timer' + i);
+                timerElement.innerText = "Time Remaining: " + formatTime(questionTimers[i-1]) + " / " + (questionDurations[i-1] / 60) + " min";
+            }
+        }
+
+        // Function to show the question and start its timer
+        function showQuestion(questionId, index) {
+            document.getElementById(questionId).style.display = 'block';
+            clearInterval(questionInterval);
+
+            // Record the start time of the question
+            questionStartTime = formatTime(totalTime);
+            
+            questionInterval = setInterval(function () {
+                if (questionTimers[index] > 0) {
+                    questionTimers[index]--;
+                } else {
+                    clearInterval(questionInterval);
+                    skipToNextQuestion(index + 1); 
+                }
+                updateTimers();
+            }, 1000);
+        }
+
+        // Function to skip to the next question manually
+        function skipToNextQuestion(current) {
+            document.getElementById('question' + current).style.display = 'none';
+            if (current < 5) {
+                let endTime = formatTime(totalTime);
+                timeline.push({
+                    task: current,
+                    startTime: questionStartTime,
+                    endTime: endTime
+                });
+                showQuestion('question' + (current + 1), current);
+            } else {
+                finishExperiment();
+            }
+        }
+
+        // Function to skip to the previous question manually
+        function skipToPreviousQuestion(current) {
+            document.getElementById('question' + current).style.display = 'none';
+            if (current > 1) {
+                let endTime = formatTime(totalTime);
+                timeline.push({
+                    task: current,
+                    startTime: questionStartTime,
+                    endTime: endTime
+                });
+                showQuestion('question' + (current - 1), current - 2);
+            }
+        }
+
+        // Record browsing history
+        function recordBrowsingHistory() {
+            const startTime = new Date().toLocaleTimeString();
+            const url = window.location.href;
+            
+            window.addEventListener("beforeunload", function() {
+                const endTime = new Date().toLocaleTimeString();
+                browsingHistory.push({
+                    site: url,
+                    startTime: startTime,
+                    endTime: endTime
+                });
+            });
+        }
+        recordBrowsingHistory();
+
+        // Function to end the experiment
+        function finishExperiment() {
+            let endTime = formatTime(totalTime);
+            timeline.push({
+                task: currentQuestion + 1,
+                startTime: questionStartTime,
+                endTime: endTime
+            });
+            clearInterval(questionInterval);
+            clearInterval(overallInterval);
+
+            // Send results to the server
+            fetch('/save_results', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({
+                    timeline: JSON.stringify(timeline),
+                    browsingHistory: JSON.stringify(browsingHistory),
+                    userName: document.getElementById('name').value,
+                    userEmail: document.getElementById('email').value
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('end-screen').style.display = 'block';
+                    alert('The experiment has ended. Thank you for your participation! You may now close this window.');
+                } else {
+                    alert('There was an error saving your results. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error saving results:', error);
+            });
+        }
+
+        // Initialize all question timers and the overall timer
+        function startExperiment() {
+            document.getElementById('warning').style.display = 'block';
+            document.querySelector('h1').style.display = 'block';
+            document.getElementById('description').style.display = 'block';
+            document.getElementById('overall-timer').style.display = 'block';
+            showQuestion('question1', 0);
+            overallInterval = setInterval(function () {
+                if (totalTime > 0) {
+                    totalTime--;
+                } else {
+                    clearInterval(overallInterval);
+                }
+                updateTimers();
+            }, 1000);
+        }
+    </script>
+
+</body>
+</html>

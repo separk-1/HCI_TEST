@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    text-align: center;
+    margin-top: 50px;
+    background-color: #f0f4f8;
+    color: #333;
+}
+
+h1 {
+    font-size: 2em;
+    margin-bottom: 20px;
+}
+
+.question {
+    display: none;
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    margin-bottom: 20px;
+}
+
+#overall-timer, .question div {
+    font-size: 1.2em;
+    margin-bottom: 20px;
+    color: #444;
+}
+
+#description {
+    font-size: 1em;
+    margin-bottom: 30px;
+    color: #666;
+}
+
+#warning {
+    font-size: 1.2em;
+    color: #d9534f;
+    background-color: #f8d7da;
+    padding: 15px;
+    border-radius: 8px;
+    display: inline-block;
+    margin-bottom: 30px;
+    font-weight: bold;
+}
+
+button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    font-family: 'Montserrat', sans-serif;
+    margin: 10px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
